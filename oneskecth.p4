@@ -72,3 +72,102 @@ apply {
     compute_light_hashes();
     insert_light();
 }
+
+
+// light part of the code in cpp is as follows:
+//    void Insert(const data_type item, count_type val ) {
+//         count_type minVal = 15, value, set_value;
+// 		uint32_t counter_pos, index_in_counter;
+
+//         for (int i = 0; i < 2; i++) {
+//             if (i == 0) {
+//                 counter_pos = hash(item, i) % LENGTH_2bit / 4;
+//                 index_in_counter = hash(item, i) % LENGTH_2bit % 4;
+//                 value = GetTwoBit(counters_2bit[counter_pos], index_in_counter);
+//                 if (value < 3 && value < minVal) {
+//                     minVal = value;
+//                 }
+
+//             }
+//             else {
+//                 counter_pos = hash(item, i) % LENGTH_4bit / 2;
+//                 index_in_counter = hash(item, i) % LENGTH_4bit % 2;
+//                 value = GetFourBit(counters_4bit[counter_pos], index_in_counter);
+//                 if (value < 15 && value < minVal) {
+//                     minVal = value;
+//                 }
+
+//             }
+//         }
+
+//         if (minVal == 15) return;
+
+//         for (int i = 0; i < 2; i++) {
+//             if (i == 0) {
+//                 counter_pos = hash(item, 0) % LENGTH_2bit / 4;
+//                 index_in_counter = hash(item, 0) % LENGTH_2bit % 4;
+//                 value = GetTwoBit(counters_2bit[counter_pos], index_in_counter);
+//                 set_value = (count_type)max((uint32_t)value, (uint32_t)(max(minVal, val)));
+//                 switch (index_in_counter) {
+//                 case 0:
+//                     if (set_value >= 3) {
+//                         counters_2bit[counter_pos] = (counters_2bit[counter_pos] & 0x3f) + (3 << 6);
+//                     }
+//                     else {
+//                         counters_2bit[counter_pos] = (counters_2bit[counter_pos] & 0x3f) + (set_value << 6);
+//                     }
+//                     break;
+//                 case 1:
+//                     if (set_value >= 3) {
+//                         counters_2bit[counter_pos] = (counters_2bit[counter_pos] & 0xcf) + (3 << 4);
+//                     }
+//                     else {
+//                         counters_2bit[counter_pos] = (counters_2bit[counter_pos] & 0xcf) + (set_value << 4);
+//                     }
+//                     break;
+//                 case 2:
+//                     if (set_value >= 3) {
+//                         counters_2bit[counter_pos] = (counters_2bit[counter_pos] & 0xf3) + (3 << 2);
+//                     }
+//                     else {
+//                         counters_2bit[counter_pos] = (counters_2bit[counter_pos] & 0xf3) + (set_value << 2);
+//                     }
+//                     break;
+//                 case 3:
+//                     if (set_value >= 3) {
+//                         counters_2bit[counter_pos] = (counters_2bit[counter_pos] & 0xfc) + 3;
+//                     }
+//                     else {
+//                         counters_2bit[counter_pos] = (counters_2bit[counter_pos] & 0xfc) + set_value;
+//                     }
+//                     break;
+//                 }
+//             }
+//             else {
+//                 counter_pos = hash(item, 1) % LENGTH_4bit / 2;
+//                 index_in_counter = hash(item, 1) % LENGTH_4bit % 2;
+//                 value = GetFourBit(counters_4bit[counter_pos], index_in_counter);
+//                 set_value = (count_type)max((uint32_t)value, (uint32_t)(max(minVal, val)));
+//                 switch (index_in_counter) {
+//                 case 0:
+//                     if (set_value >= 15) {
+//                         counters_4bit[counter_pos] = (counters_4bit[counter_pos] & 0xf) + (15 << 4);
+//                     }
+//                     else {
+//                         counters_4bit[counter_pos] = (counters_4bit[counter_pos] & 0xf) + (set_value << 4);
+//                     }
+//                     break;
+//                 case 1:
+//                     if (set_value >= 15) {
+//                         counters_4bit[counter_pos] = (counters_4bit[counter_pos] & 0xf0) + 15;
+//                     }
+//                     else {
+//                         counters_4bit[counter_pos] = (counters_4bit[counter_pos] & 0xf0) + set_value;
+//                     }
+//                     break;
+//                 }
+
+//             }
+//         }
+
+//     }
