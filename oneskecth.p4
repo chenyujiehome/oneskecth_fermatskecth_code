@@ -92,3 +92,37 @@ table onesketch_table {
     size: 1024; // 假设的表格大小
     default_action: insert_onesketch;
 }
+
+// heavy part inert in cpp:
+//   void Insert(const data_type item) {
+//         uint32_t pos = hash(item) % HEAVY_LENGTH, minPos = 0;
+//         count_type minVal = 0xffffffff;
+
+//         for (uint32_t i = 0; i < COUNTER_PER_BUCKET; i++){
+//             if(buckets[pos].ID[i] == item){
+//                 buckets[pos].count[i] += 1;
+//                 return;
+//             }
+
+//             if(buckets[pos].count[i] == 0){
+//                 buckets[pos].ID[i] = item;
+//                 buckets[pos].count[i] = 1;
+//                 return;
+//             }
+
+//             if(buckets[pos].count[i] < minVal){
+//                 minPos = i;
+//                 minVal = buckets[pos].count[i];
+//             }
+//         }
+
+//         if(!(rand()%(minVal+1))){
+//             count_type light_query = towerCU->Query(item);
+//             towerCU->Insert(buckets[pos].ID[minPos], buckets[pos].count[minPos]);
+//             buckets[pos].ID[minPos] = item;
+//             buckets[pos].count[minPos] = light_query + 1;
+//         }
+//         else {
+//             towerCU->Insert(item);
+//         }
+// 	}
