@@ -1,28 +1,5 @@
-// 定义数据结构
-header_type onesketch_meta_t {
-    fields {
-        e : 32;  // 假设 e 是一个 32 位的字段
-        CH : 32; // Counter for heavy part
-        CL : 32; // Counter for light part
-        ...
-    }
-}
-
-// 定义哈希函数 h()
-action compute_hash() {
-    modify_field(onesketch_meta.e, hash2(onesketch_meta.e));
-}
-
-// 插入逻辑
-#define LENGTH_2bit 4096
-#define LENGTH_4bit 2048
-
-register<bit<8>>(LENGTH_2bit) counters_2bit;
-register<bit<8>>(LENGTH_4bit) counters_4bit;
-
 action compute_light_hashes() {
-    // These hash functions would need to be defined/available in P4.
-    // Typically, you would use the available hash functions and then reduce them modulo LENGTH_2bit or LENGTH_4bit.
+    // Assuming hdr.ipv4.srcAddr is the item in C++ code. 
     bit<32> hash0 = hash1(hdr.ipv4.srcAddr);
     bit<32> hash1 = hash2(hdr.ipv4.srcAddr);
 
@@ -33,56 +10,65 @@ action compute_light_hashes() {
 action insert_light() {
     bit<8> value_2bit;
     bit<8> value_4bit;
+    bit<2> minVal_2bit = 3;
+    bit<4> minVal_4bit = 15;
 
     // Read counters based on hash values
-    counters_2bit.read(value_2bit, meta.hash0_2bit);
-    counters_4bit.read(value_4bit, meta.hash1_4bit);
+    counters_2bit.read(value_2bit, meta.hash0_2bit / 4);
+    counters_4bit.read(value_4bit, meta.hash1_4bit / 2);
 
-    // The actual insertion logic will involve bit manipulation
-    // similar to your C++ code. Here, the bit operations have to
-    // be done in a more explicit manner, e.g., using bit-slicing.
+    // Get the index in counter
+    bit<2> index_2bit = meta.hash0_2bit % 4;
+    bit<1> index_4bit = meta.hash1_4bit % 2;
 
-    // Here's a small example for the 2bit counter:
-    if (meta.hash0_2bit % 4 == 0) {
-        // Do operations for case 0
-        // Example: (value_2bit & 0x3f) + (3 << 6);
+    // 2bit counter value extraction logic
+    switch (index_2bit) {
+        case 0: minVal_2bit = value_2bit >> 6; break;
+        case 1: minVal_2bit = (value_2bit >> 4) & 0x03; break;
+        case 2: minVal_2bit = (value_2bit >> 2) & 0x03; break;
+        case 3: minVal_2bit = value_2bit & 0x03; break;
     }
-    // Similarly for other cases...
 
-    // And for the 4bit counter:
-    if (meta.hash1_4bit % 2 == 0) {
-        // Do operations for case 0
+    // 4bit counter value extraction logic
+    switch (index_4bit) {
+        case 0: minVal_4bit = value_4bit >> 4; break;
+        case 1: minVal_4bit = value_4bit & 0x0f; break;
     }
-    // Similarly for other cases...
 
-    // Finally, write back the values to the registers
-    counters_2bit.write(meta.hash0_2bit, value_2bit);
-    counters_4bit.write(meta.hash1_4bit, value_4bit);
+    bit<4> minVal = (minVal_2bit < minVal_4bit) ? minVal_2bit : minVal_4bit;
+
+    // 2bit counter update logic
+    switch (index_2bit) {
+        case 0:
+            value_2bit = (minVal >= 3) ? (value_2bit & 0x3f) | (3 << 6) : (value_2bit & 0x3f) | (minVal << 6);
+            break;
+        case 1:
+            value_2bit = (minVal >= 3) ? (value_2bit & 0xcf) | (3 << 4) : (value_2bit & 0xcf) | (minVal << 4);
+            break;
+        case 2:
+            value_2bit = (minVal >= 3) ? (value_2bit & 0xf3) | (3 << 2) : (value_2bit & 0xf3) | (minVal << 2);
+            break;
+        case 3:
+            value_2bit = (minVal >= 3) ? (value_2bit & 0xfc) | 3 : (value_2bit & 0xfc) | minVal;
+            break;
+    }
+
+    // 4bit counter update logic
+    switch (index_4bit) {
+        case 0:
+            value_4bit = (minVal >= 15) ? (value_4bit & 0x0f) | (15 << 4) : (value_4bit & 0x0f) | (minVal << 4);
+            break;
+        case 1:
+            value_4bit = (minVal >= 15) ? (value_4bit & 0xf0) | 15 : (value_4bit & 0xf0) | minVal;
+            break;
+    }
+
+    // Write back to the registers
+    counters_2bit.write(meta.hash0_2bit / 4, value_2bit);
+    counters_4bit.write(meta.hash1_4bit / 2, value_4bit);
 }
 
-// In the main ingress control block:
 apply {
     compute_light_hashes();
     insert_light();
-    // ... rest of your logic
-}
-
-
-// 主要控制流
-control ingress {
-    apply {
-        compute_hash();
-        insert_onesketch();
-        // 更多逻辑...
-    }
-}
-
-// 定义表格结构等
-table onesketch_table {
-    actions {
-        insert_onesketch;
-        ...
-    }
-    size: 1024; // 假设的表格大小
-    default_action: insert_onesketch;
 }
